@@ -8,15 +8,15 @@ from urllib import urlopen, urlencode
 from tweetconnect import *
 from auth_and_Secret import TweetOuth
 c = None
-Screan_name = None
-Slug = None
+screan_name = None
+slug = None
 
     
 def fetch():
     going_up = True
     while going_up:
         cu = c.cursor()
-        cu.execute('SELECT MAX(tweet_id) max_id FROM `%s`' % Slug )
+        cu.execute('SELECT MAX(tweet_id) max_id FROM `%s`' % slug )
         results = cu.fetchone()
         tweet_count = None
         if not results[0]:
@@ -30,7 +30,7 @@ def fetch():
     going_down = True
     while going_down:
         cu = c.cursor()
-        cu.execute('SELECT MIN(tweet_id) min_id FROM `%s`' % Slug)
+        cu.execute('SELECT MIN(tweet_id) min_id FROM `%s`' % slug)
         results = cu.fetchone()
         print >>sys.stderr, 'Requesting tweets older than %lu' % results[0]
         tweet_count = load_tweets(max_id=(results[0]-1))
@@ -39,7 +39,7 @@ def fetch():
             going_down = False
 
 def load_tweets(**kwargs):
-    args = dict(count=20, slug=Slug,owner_screen_name=Screan_name)
+    args = dict(count=20, slug=slug,owner_screen_name=screan_name)
     args.update(**kwargs)
     url = 'https://api.twitter.com/1.1/lists/statuses.json?' + urlencode(args)
     user_timeline = TweetOuth.tweet_req(url) 
@@ -47,7 +47,7 @@ def load_tweets(**kwargs):
     if type(tweets) == dict and tweets.has_key(u'errors'):
         raise Exception(tweets[u'errors'])
     for twit in tweets:
-        c.execute('INSERT INTO `%s` (user, tweet_id, created, text, source, screan_name, description) VALUES (?, ?, ?, ?, ?, ?, ?)' % Slug,
+        c.execute('INSERT INTO `%s` (user, tweet_id, created, text, source, screan_name, description) VALUES (?, ?, ?, ?, ?, ?, ?)' % slug,
             (twit[u'user'][u'name'],
              twit['id'],
             time.mktime(rfc822.parsedate(twit['created_at'])),
@@ -78,32 +78,32 @@ and then
 ''' % (args[0],args[0],args[0])
 
 def main(*args):
-    global c, Screan_name, Slug
+    global c, screan_name, slug
     if len(args) < 4:
         print_help(args)
     elif args[1] == 'init':
-        Screan_name = args[2]
-        Slug = args[3]
+        screan_name = args[2]
+        slug = args[3]
         try:
-            c = connect('%s.db' % Screan_name)
+            c = connect('%s.db' % screan_name)
             c.execute('CREATE TABLE `%s` (tweet_id INTEGER PRIMARY KEY NOT NULL,user TEXT NOT NULL,screan_name TEXT NOT NULL, description TEXT NOT NULL,\
-created INTEGER NOT NULL, text TEXT NOT NULL, source TEXT)' % Slug)
+created INTEGER NOT NULL, text TEXT NOT NULL, source TEXT)' % slug)
         except Exception, e:
             print >>sys.stderr, "Error: There was a problem creating your database: %s" % str(e)
             sys.exit(-1)
     elif args[1] == 'fetch':
-        Screan_name = args[2]
-        Slug = args[3]
-        print Slug
+        screan_name = args[2]
+        slug = args[3]
+        print slug
         try:
-            c = connect('%s.db' % Screan_name)
+            c = connect('%s.db' % screan_name)
         except Exception, e:
             print >>sys.stderr, "Error: There was a problem opening your database: %s" % str(e)
             sys.exit(-2)
         try:
             fetch()
         except Exception, e:
-            print >>sys.stderr, "Error: There was a problem retrieving %s's '%s' list: %s" % (Screan_name,Slug, str(e))
+            print >>sys.stderr, "Error: There was a problem retrieving %s's '%s' list: %s" % (screan_name,slug, str(e))
             print >>sys.stderr, "Error: This may be a temporary failure, wait a bit and try again."
             sys.exit(-3)
     else:
